@@ -44,12 +44,16 @@ tabels:
         admin: getAllEducationalStaff, retreiveEducationalStaff, addEducationalStaff, updateEducationalStaff, deleteEducationalStaff 
         user: getAllEducationalStaff ✔️
 
-5- outstanding stidents: 
+5- outstanding students: 
     id: INT AI PRIMARY
     first_name: varchar(50)
     last_name: varchar(50)
     image: Varchar(300)
     description: Varchar(300)
+
+    actions: 
+        admin: getAllOutStandingStudents, retreiveOutStandingStudents, addOutStandingStudents, updateOutStandingStudents, deleteOutStandingStudents 
+        user: getAllOutStandingStudents ✔️
 
 6- courses:
     id: INT AI PRIMARY
@@ -59,7 +63,26 @@ tabels:
     summaries_url: varchar(500)
     course: varchar(500)
 
+    actions: 
+        admin: getAllCourses, retreiveCourses, addCourses, updateCourses, deleteCourses 
+        user: getAllCourses ✔️
+
 7- videos: 
     id: INT AI PRIMARY
     course_id: INT Foring key refrance course
     url varchar(500)
+
+    actions: 
+        admin: getAllVideos, retreiveVideos, addVideos, updateVideos, deleteVideos 
+        user: getAllVideos ✔️
+
+8- students_help_club:
+    id: INT AI PRIMARY
+    first_name: varchar(50)
+    last_name: varchar(50)
+    image: Varchar(300)
+    description: Varchar(300)
+
+    actions: 
+        admin: getAllStudentsHelpClub, retreiveStudentsHelpClub, addStudentsHelpClub, updateStudentsHelpClub, deleteStudentsHelpClub 
+        user: getAllStudentsHelpClub ✔️
