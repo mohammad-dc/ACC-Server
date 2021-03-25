@@ -32,7 +32,7 @@ const retrieveClubMembers = (req: Request, res: Response, next: NextFunction) =>
 
 const addClubMembers = (req: Request, res: Response, next: NextFunction) => {
     let {first_name, last_name, rank} = req.body;
-    let image = req.file.path;
+    let image =`acc${req.file.path.split('acc')[1].trim()}`;
 
     try{
         con.query(`INSERT INTO club_members (first_name, last_name, image, rank) VALUES ('${first_name}', '${last_name}',' ${image}','${rank}')`, (error, results, fields) =>{
@@ -57,26 +57,17 @@ const addClubMembers = (req: Request, res: Response, next: NextFunction) => {
 const updateClubMembers = (req: Request, res: Response, next: NextFunction) => {
     let {first_name, last_name, rank} = req.body;
     let {id} = req.params;
-    let image = req.file.path;
 
     try{
         // remove the last image from uploads folder
         con.query(`SELECT * FROM club_members WHERE id=${id}`, (error, results, fields) =>{
             if(error) throw error
             if(results) {
-                let arr = [results[0].image.substring(0,3),
-                            results[0].image.substring(3,10),
-                            results[0].image.substring(10)
-                        ];
-                fs.unlink(arr.join("\\"), (error)=>{
-                    if(error){
-                        res.status(400).json({
-                            success: false,
-                            message: error.message,
-                            error
-                        })
-                    }
-                    con.query(`UPDATE club_members SET first_name='${first_name}', last_name='${last_name}', image='${image}', rank='${rank}' WHERE id=${id}`, (error, results, fields) =>{
+                req.file?
+                fs.unlink(`/src/uploads/${results[0].image.trim()}`, (error) => {
+                    let image =`acc${req.file.path.split('acc')[1].trim()}`;
+                    if(error) throw error;
+                    con.query(`UPDATE club_members SET first_name='${first_name}', last_name='${last_name}', image=${image}, rank='${rank}' WHERE id=${id}`, (error, results, fields) =>{
                         if(error) throw error
                         if(results) {
                             res.status(200).json({
@@ -84,8 +75,17 @@ const updateClubMembers = (req: Request, res: Response, next: NextFunction) => {
                                 message: "تم تعديل العضو بنجاح"
                             })
                         }
-                    })
-                })
+                    });
+                }) : 
+                con.query(`UPDATE club_members SET first_name='${first_name}', last_name='${last_name}', rank='${rank}' WHERE id=${id}`, (error, results, fields) =>{
+                    if(error) throw error
+                    if(results) {
+                        res.status(200).json({
+                            success: true,
+                            message: "تم تعديل العضو بنجاح"
+                        })
+                    }
+                });
             }
         })
     } 
@@ -105,18 +105,8 @@ const deleteClubMembers = (req: Request, res: Response, next: NextFunction) => {
         con.query(`SELECT * FROM club_members WHERE id=${id}`, (error, results, fields) =>{
             if(error) throw error
             if(results) {
-                let arr = [results[0].image.substring(0,3),
-                            results[0].image.substring(3,10),
-                            results[0].image.substring(10)
-                        ];
-                fs.unlink(arr.join("\\"), (error)=>{
-                    if(error){
-                        res.status(400).json({
-                            success: false,
-                            message: error.message,
-                            error
-                        })
-                    }
+                fs.unlink(`src/uploads/${results[0].image.trim()}`, (error) => {
+                    if(error) throw error;
                     con.query(`DELETE FROM club_members WHERE id=${id}`, (error, results, fields) =>{
                         if(error) throw error
                         if(results) {
@@ -125,8 +115,8 @@ const deleteClubMembers = (req: Request, res: Response, next: NextFunction) => {
                                 message: "تم حذف العضو بنجاح"
                             })
                         }
-                    })
-                })
+                    });
+                });
             }
         })
     } 

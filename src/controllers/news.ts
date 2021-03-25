@@ -3,7 +3,7 @@ import fs from "fs";
 import {con} from "../config/db";
 
 const getAllNews = (req: Request, res: Response, next: NextFunction) => {
-    con.query('SELECT * FROM news', (error, results, fields) =>{
+    con.query('SELECT id, title, description, image, date_time FROM news', (error, results, fields) =>{
         if(error) throw error
         if(results) {
             res.status(200).json({
@@ -18,7 +18,7 @@ const getAllNews = (req: Request, res: Response, next: NextFunction) => {
 const retrieveNews = (req: Request, res: Response, next: NextFunction) => {
     let {id} = req.params;
 
-    con.query(`SELECT * FROM news WHERE id=${id}`, (error, results, fields) =>{
+    con.query(`SELECT id, title, description, image, date_time FROM news WHERE id=${id}`, (error, results, fields) =>{
         if(error) throw error
         if(results) {
             res.status(200).json({
@@ -31,7 +31,7 @@ const retrieveNews = (req: Request, res: Response, next: NextFunction) => {
 
 const addNews = (req: Request, res: Response, next: NextFunction) => {
     let {title, description} = req.body;
-    let image = req.file.path;
+    let image =`acc${req.file.path.split('acc')[1].trim()}`;
 
     try{
         con.query(`INSERT INTO news (title, description, image) VALUES ('${title}', '${description}',' ${image}')`, (error, results, fields) =>{
@@ -56,25 +56,16 @@ const addNews = (req: Request, res: Response, next: NextFunction) => {
 const updateNews = (req: Request, res: Response, next: NextFunction) => {
     let {title, description} = req.body;
     let {id} = req.params;
-    let image = req.file.path;
 
     try{
         // remove the last image from uploads folder
         con.query(`SELECT * FROM news WHERE id=${id}`, (error, results, fields) =>{
             if(error) throw error
             if(results) {
-                let arr = [results[0].image.substring(0,3),
-                            results[0].image.substring(3,10),
-                            results[0].image.substring(10)
-                        ];
-                fs.unlink(arr.join("\\"), (error)=>{
-                    if(error){
-                        res.status(400).json({
-                            success: false,
-                            message: error.message,
-                            error
-                        })
-                    }
+                req.file?
+                fs.unlink(`/src/uploads/${results[0].image.trim()}`, (error) => {
+                    let image =`acc${req.file.path.split('acc')[1].trim()}`;
+                    if(error) throw error;
                     con.query(`UPDATE news SET title='${title}', description='${description}', image='${image}' WHERE id=${id}`, (error, results, fields) =>{
                         if(error) throw error
                         if(results) {
@@ -84,6 +75,15 @@ const updateNews = (req: Request, res: Response, next: NextFunction) => {
                             })
                         }
                     })
+                }) :
+                con.query(`UPDATE news SET title='${title}', description='${description}' WHERE id=${id}`, (error, results, fields) =>{
+                    if(error) throw error
+                    if(results) {
+                        res.status(200).json({
+                            success: true,
+                            message: "تم تعديل الخبر بنجاح"
+                        })
+                    }
                 })
             }
         })
@@ -104,18 +104,8 @@ const deleteNews = (req: Request, res: Response, next: NextFunction) => {
         con.query(`SELECT * FROM news WHERE id=${id}`, (error, results, fields) =>{
             if(error) throw error
             if(results) {
-                let arr = [results[0].image.substring(0,3),
-                            results[0].image.substring(3,10),
-                            results[0].image.substring(10)
-                        ];
-                fs.unlink(arr.join("\\"), (error)=>{
-                    if(error){
-                        res.status(400).json({
-                            success: false,
-                            message: error.message,
-                            error
-                        })
-                    }
+                fs.unlink(`src/uploads/${results[0].image.trim()}`, (error) => {
+                    if(error) throw error;
                     con.query(`DELETE FROM news WHERE id=${id}`, (error, results, fields) =>{
                         if(error) throw error
                         if(results) {

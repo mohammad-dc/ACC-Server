@@ -1,4 +1,6 @@
 import express from "express";
+import cors from "cors";
+import morgan from 'morgan';
 import connection from "./config/db";
 import adminRouter from "./routes/admin";
 import newsRouter from  './routes/news';
@@ -11,6 +13,17 @@ import videosRoute from "./routes/videos";
 
 const server = express();
 server.use(express.json());
+server.use('/uploads', express.static('./src/uploads'));
+server.use(cors());
+server.use(morgan(function (tokens, req, res) {
+  return [
+    tokens.method(req, res),
+    tokens.url(req, res),
+    tokens.status(req, res),
+    tokens.res(req, res, 'content-length'), '-',
+    tokens['response-time'](req, res), 'ms'
+  ].join(' ')
+}))
 connection;
 
 server.use('/', adminRouter);
