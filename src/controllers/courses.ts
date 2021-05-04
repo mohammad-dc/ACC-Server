@@ -3,13 +3,27 @@ import fs from "fs";
 import {con} from "../config/db";
 
 const getAllCourses = (req: Request, res: Response, next: NextFunction) => {
-    con.query('SELECT * FROM courses', (error, results, fields) =>{
+    let queryCourses = 'SELECT id, name, type, setup, exams, course, summaries FROM courses';
+    let queryVideos = 'SELECT id, course_id, url FROM videos';
+
+    con.query(queryCourses, (error, courses, fields) =>{
         if(error) throw error
-        if(results) {
-            res.status(200).json({
-                success: true,
-                results,
-                count: results.length
+        if(courses) {
+            con.query(queryVideos, (error, videos, fields) =>{
+                if(error) throw error;
+                if(videos){
+                    let results = [];
+                    courses.forEach((el: any, index: number) =>{
+                        let videosList = videos.filter((e: any) => e.course_id === el.id);
+                        courses[index]['videos'] = videosList;
+                    });
+                    results = courses
+                    res.status(200).json({
+                        success: true,
+                        results,
+                        count: courses.length
+                    })
+                }
             })
         }
     })
@@ -30,21 +44,42 @@ const retrieveCourses = (req: Request, res: Response, next: NextFunction) => {
 }
 
 const addCourses = (req: Request, res: Response, next: NextFunction) => {
-    let {name, type, exams_url, summaries_url, course} = req.body;
+    let {name, type, exams, summaries, course, setup, videos} = req.body;
+    console.log(req.body);
+    let query1 = `INSERT INTO courses (name, type, setup, exams, summaries, course) VALUES ('${name}', '${type}', '${setup}', '${exams}', '${summaries}', '${course}')`;
+    let query2 = `INSERT INTO videos (course_id, url) VALUES ?`;
 
     try{
-        con.query(`INSERT INTO courses (name, type, exams_url, summaries_url, course) VALUES ('${name}', '${type}', '${exams_url}', '${summaries_url}', '${course}')`, (error, results, fields) =>{
+        con.query(query1, (error, results, fields) =>{
             if(error) throw error
             if(results) {
-                res.status(200).json({
+                if(videos.length !== 0){
+                    let videosList = [];
+                    while(videos.length) videosList.push(videos.splice(0,1));
+                    videosList.forEach(el => {
+                        el.unshift(results.insertId)
+                    });
+                    con.query(query2, [videosList], (error, results, fields) =>{
+                    if(error) throw error;
+                    if(results){
+                        return res.status(200).json({
+                            success: true,
+                            message: "تم اضافة المادة بنجاح"
+                        })
+                    }
+                })
+                }
+                else {
+                return res.status(200).json({
                     success: true,
                     message: "تم اضافة المادة بنجاح"
                 })
             }
+            }
         })
     } 
     catch(error){
-        res.status(400).json({
+        return res.status(400).json({
             success: false,
             message: error.message,
             error
@@ -53,7 +88,7 @@ const addCourses = (req: Request, res: Response, next: NextFunction) => {
 }
 
 const updateCourses = (req: Request, res: Response, next: NextFunction) => {
-    let {name, type, exams_url, summaries_url, course} = req.body;
+    let {name, type, setup, exams, summaries, course} = req.body;
     let {id} = req.params;
 
     try{
@@ -61,27 +96,14 @@ const updateCourses = (req: Request, res: Response, next: NextFunction) => {
         con.query(`SELECT * FROM courses WHERE id=${id}`, (error, results, fields) =>{
             if(error) throw error
             if(results) {
-                let arr = [results[0].image.substring(0,3),
-                            results[0].image.substring(3,10),
-                            results[0].image.substring(10)
-                        ];
-                fs.unlink(arr.join("\\"), (error)=>{
-                    if(error){
-                        res.status(400).json({
-                            success: false,
-                            message: error.message,
-                            error
+                con.query(`UPDATE courses SET name='${name}', type='${type}', setup='${setup}', exams='${exams}', summaries='${summaries}' course='${course}' WHERE id=${id}`, (error, results, fields) =>{
+                    if(error) throw error
+                    if(results) {
+                        res.status(200).json({
+                            success: true,
+                            message: "تم تعديل المادة بنجاح"
                         })
                     }
-                    con.query(`UPDATE courses SET name='${name}', type='${type}', exams_url='${exams_url}', summaries_url='${summaries_url}' course='${course}' WHERE id=${id}`, (error, results, fields) =>{
-                        if(error) throw error
-                        if(results) {
-                            res.status(200).json({
-                                success: true,
-                                message: "تم تعديل المادة بنجاح"
-                            })
-                        }
-                    })
                 })
             }
         })
@@ -102,27 +124,14 @@ const deleteCourses = (req: Request, res: Response, next: NextFunction) => {
         con.query(`SELECT * FROM courses WHERE id=${id}`, (error, results, fields) =>{
             if(error) throw error
             if(results) {
-                let arr = [results[0].image.substring(0,3),
-                            results[0].image.substring(3,10),
-                            results[0].image.substring(10)
-                        ];
-                fs.unlink(arr.join("\\"), (error)=>{
-                    if(error){
-                        res.status(400).json({
-                            success: false,
-                            message: error.message,
-                            error
+                con.query(`DELETE FROM courses WHERE id=${id}`, (error, results, fields) =>{
+                    if(error) throw error
+                    if(results) {
+                        res.status(200).json({
+                            success: true,
+                            message: "تم حذف المادة بنجاح"
                         })
                     }
-                    con.query(`DELETE FROM courses WHERE id=${id}`, (error, results, fields) =>{
-                        if(error) throw error
-                        if(results) {
-                            res.status(200).json({
-                                success: true,
-                                message: "تم حذف المادة بنجاح"
-                            })
-                        }
-                    })
                 })
             }
         })

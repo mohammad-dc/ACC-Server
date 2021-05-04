@@ -5,6 +5,7 @@ export const CoursesSchema = yup.object().shape({
     type: yup.string().required(),
     exams_url: yup.string(),
     summaries_url: yup.string(),
-    course: yup.string()
+    course: yup.string(),
+    videos: yup.array().of(yup.string())
 });
 
